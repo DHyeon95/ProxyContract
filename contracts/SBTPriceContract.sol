@@ -5,6 +5,7 @@ import "./interfaces/IUniswapV2Pair.sol";
 import "./interfaces/ISBTPriceContract.sol";
 import "./access/Ownable.sol";
 import "./interfaces/IERC20.sol";
+import "hardhat/console.sol";
 
 contract SBTPriceContract is ISBTPriceContract, Ownable {
   uint256 public tokenPrice;
@@ -34,8 +35,8 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
     if (contractAddress == address(0)) {
       (contractAddress, ratio) = _calRatio(tokenA, "WBFC");
       (, uint256 nativeRatio) = _calRatio("WBFC", "USDC");
-      ratio *= 10 ** 18;
-      ratio /= nativeRatio;
+      ratio *= nativeRatio;
+      ratio /= 10 ** 18;
     }
     return (contractAddress, ratio);
   }
@@ -66,7 +67,7 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
       return (address(0), 0);
     }
 
-    aAmount *= IERC20(bAddress).decimals();
+    aAmount *= (10 ** IERC20(bAddress).decimals());
     aAmount /= bAmount;
     return (aAddress, aAmount);
   }
