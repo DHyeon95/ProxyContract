@@ -40,6 +40,9 @@ describe("PriceContract", function () {
   });
 
   describe("Get data", function () {
+    before(async function () {
+      await priceContract.setPool(tokenA, tokenB, poolAddress);
+    });
     it("should get data", async function () {
       expect(await priceContract.getSBTPriceToken("MATIC"));
       expect(await priceContract.getSBTPriceNative());
