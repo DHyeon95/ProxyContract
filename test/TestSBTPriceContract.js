@@ -2,35 +2,51 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { constants } = require("@openzeppelin/test-helpers");
+const { tokenA, tokenB, poolAddress } = require("../pooldata/pooldata");
 require("dotenv").config();
 
 describe("PriceContract", function () {
   before(async function () {
     [owner, testUser] = await ethers.getSigners();
-    priceContract = await ethers.deployContract("SBTPriceContract");
-
-    const a = ["WBFC", "WBFC", "WBFC"];
-    const b = ["ETH", "BNB", "USDC"];
-    const c = [
-      "0x9B0BE7718Fa090A542Be48bB95F43226f88B677F",
-      "0x8f8D41d842F78866Bdc9c0eB849d6c5Db6fA9CB4",
-      "0x9E7f1eef97BA237FF1DAdc6c1b4677a94Df8442A",
-    ];
-    await priceContract.setPool(a, b, c);
+    priceContract = await ethers.deployContract("SBTPriceContract", [1000000]);
   });
 
-  it("test", async function () {
-    console.log(await priceContract.pool("WBFC", "BNB"));
-    // const fallbackTx = await owner.sendTransaction({
-    //   to: proxyContract.target,
-    //   value: 100,
-    // });
-    // await fallbackTx.wait();
-    // await expect(
-    //   owner.sendTransaction({
-    //     to: proxyContract.target,
-    //     value: 100,
-    //   }),
-    // ).to.be.revertedWith("a");
+  beforeEach(async function () {
+    snapshotId = await network.provider.send("evm_snapshot");
+  });
+
+  afterEach(async function () {
+    await network.provider.send("evm_revert", [snapshotId]);
+  });
+
+  describe("Initialize", function () {
+    it("should correct initial state", async function () {
+      expect(await priceContract.owner()).to.equal(owner.address);
+      expect(await priceContract.tokenPrice()).to.equal(1000000);
+    });
+  });
+
+  describe("Set state", function () {
+    it("should set state from owner", async function () {
+      await priceContract.setPool(tokenA, tokenB, poolAddress);
+      await priceContract.setTokenPrice(200000);
+      expect(await priceContract.tokenPrice()).to.equal(200000);
+    });
+
+    it("should fail set pool", async function () {
+      const errorData = ["a", "b"];
+      await expect(priceContract.setPool(tokenA, errorData, poolAddress)).to.be.revertedWith("Invalid Input");
+    });
+  });
+
+  describe("Get data", function () {
+    it("should get data", async function () {
+      expect(await priceContract.getSBTPriceToken("MATIC"));
+      expect(await priceContract.getSBTPriceNative());
+    });
+
+    it("should fail get data", async function () {
+      await expect(priceContract.getSBTPriceToken("NOPOOLTOKEN")).to.be.revertedWith("Invalid token");
+    });
   });
 });

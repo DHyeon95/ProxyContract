@@ -9,9 +9,11 @@ import "hardhat/console.sol";
 
 contract SBTPriceContract is ISBTPriceContract, Ownable {
   uint256 public tokenPrice;
-  mapping(string => mapping(string => address)) public pool;
+  mapping(string => mapping(string => address)) pool;
 
-  constructor() Ownable(_msgSender()) {}
+  constructor(uint256 _price) Ownable(_msgSender()) {
+    tokenPrice = _price;
+  }
 
   function setPool(
     string[] calldata tokenA,
@@ -28,7 +30,7 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
     tokenPrice = input;
   }
 
-  function getSBTPriceToken(string memory tokenA) external view returns (address, uint256) {
+  function getSBTPriceToken(string calldata tokenA) external view returns (address, uint256) {
     address contractAddress;
     uint256 ratio;
     (contractAddress, ratio) = _calRatio(tokenA, "USDC");
@@ -38,15 +40,16 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
       ratio *= nativeRatio;
       ratio /= 10 ** 18;
     }
+    require(contractAddress != address(0), "Invalid token");
+    ratio = (ratio * tokenPrice) / 10 ** 6;
     return (contractAddress, ratio);
   }
 
   function getSBTPriceNative() external view returns (uint256) {
     (, uint256 ratio) = _calRatio("WBFC", "USDC");
-    return ratio;
+    return (ratio * tokenPrice) / 10 ** 6;
   }
 
-  // 왜 calldata하면 에러인지
   function _calRatio(string memory tokenA, string memory tokenB) internal view returns (address, uint256) {
     address aAddress;
     address bAddress;
@@ -64,6 +67,7 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
       aAddress = dexPool.token0();
       bAddress = dexPool.token1();
     } else {
+      // 직접적으로 연결된 풀이 없을 경우
       return (address(0), 0);
     }
 
