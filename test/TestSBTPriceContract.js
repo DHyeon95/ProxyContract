@@ -37,6 +37,18 @@ describe("PriceContract", function () {
       const errorData = ["a", "b"];
       await expect(priceContract.setPool(tokenA, errorData, poolAddress)).to.be.revertedWith("Invalid Input");
     });
+
+    it("should set state from other", async function () {
+      await expect(priceContract.connect(testUser).setPool(tokenA, tokenB, poolAddress)).to.be.revertedWithCustomError(
+        priceContract,
+        "OwnableUnauthorizedAccount",
+      );
+      await expect(priceContract.connect(testUser).setTokenPrice(200000)).to.be.revertedWithCustomError(
+        priceContract,
+        "OwnableUnauthorizedAccount",
+      );
+      expect(await priceContract.tokenPrice()).to.equal(100000);
+    });
   });
 
   describe("Get data", function () {
