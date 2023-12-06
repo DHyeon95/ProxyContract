@@ -63,5 +63,10 @@ contract SaleContract is Ownable, StorageContract {
     tokenContract = ISBTContract(_contract);
   }
 
-  function setToken(string[] calldata token, TokenState[] calldata input) external onlyOwner {}
+  function setToken(string[] calldata token, TokenState[] calldata input) external onlyOwner {
+    require(token.length == input.length, "Invalid Input");
+    for (uint256 i = 0; i < token.length; i++) {
+      state[token[i]] = input[i];
+    }
+  }
 }
