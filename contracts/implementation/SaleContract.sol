@@ -43,12 +43,15 @@ contract SaleContract is Ownable, StorageContract {
     tokenContract.mintSBT(_msgSender(), count);
   }
 
+  // withdrawToken 필요함
+  // tokenContract 저장을 어디에 할지
+
   function withdrawBFC(uint256 amount) external checkSwitch onlyOwner {
     payable(owner()).transfer(amount);
   }
 
   function withdrawUSDC(uint256 amount) external checkSwitch onlyOwner {
-    // stableContract.transfer(owner(), amount);
+    usdcContract.transfer(owner(), amount);
   }
 
   function setSBTPriceContract(address _contract) external onlyOwner {
