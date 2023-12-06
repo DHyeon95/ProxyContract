@@ -1,0 +1,11 @@
+[
+  { "tokenA": "WBFC", "tokenB": "ETH", "poolAddress": "0x9B0BE7718Fa090A542Be48bB95F43226f88B677F" },
+  { "tokenA": "WBFC", "tokenB": "BNB", "poolAddress": "0x8f8D41d842F78866Bdc9c0eB849d6c5Db6fA9CB4" },
+  { "tokenA": "WBFC", "tokenB": "USDC", "poolAddress": "0x9E7f1eef97BA237FF1DAdc6c1b4677a94Df8442A" },
+  { "tokenA": "WBFC", "tokenB": "BiFi", "poolAddress": "0x54013F833439C492Ebd2770A39c0f3671A50F56A" },
+  { "tokenA": "WBFC", "tokenB": "MATIC", "poolAddress": "0x6bd50573B72d62E2Cf23e68EE8546CA64cfBAa1a" },
+  { "tokenA": "USDC", "tokenB": "ETH", "poolAddress": "0x7D3056a8da7726891944168Bd1Db797d71e2e3C9" },
+  { "tokenA": "WBFC", "tokenB": "USDT", "poolAddress": "0xD58EDb39819e72DBB28Ef5131354B9C16fC045eF" },
+  { "tokenA": "WBFC", "tokenB": "DAI", "poolAddress": "0xdb6f17f074e2D30a086DB8f9F8022e355e085E2B" },
+  { "tokenA": "WBFC", "tokenB": "BUSD", "poolAddress": "0x2beE7D4C1C1349d66219916bB1214eCD7C2E19AC" }
+]
