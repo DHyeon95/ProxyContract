@@ -1,7 +1,5 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-const { constants } = require("@openzeppelin/test-helpers");
 const { tokenA, tokenB, poolAddress } = require("../pooldata/pooldata");
 require("dotenv").config();
 
@@ -35,7 +33,9 @@ describe("PriceContract", function () {
 
     it("should fail set pool", async function () {
       const errorData = ["a", "b"];
-      await expect(priceContract.setPool(tokenA, errorData, poolAddress)).to.be.revertedWith("Invalid Input");
+      await expect(priceContract.setPool(tokenA, errorData, poolAddress)).to.be.revertedWith(
+        "Length mismatch between input data",
+      );
     });
 
     it("should set state from other", async function () {
@@ -47,7 +47,7 @@ describe("PriceContract", function () {
         priceContract,
         "OwnableUnauthorizedAccount",
       );
-      expect(await priceContract.tokenPrice()).to.equal(100000);
+      expect(await priceContract.tokenPrice()).to.equal(1000000);
     });
   });
 
@@ -61,7 +61,7 @@ describe("PriceContract", function () {
     });
 
     it("should fail get data", async function () {
-      await expect(priceContract.getSBTPriceToken("NOPOOLTOKEN")).to.be.revertedWith("Invalid token");
+      await expect(priceContract.getSBTPriceToken("NOPOOLTOKEN")).to.be.revertedWith("The token pool does not exist");
     });
   });
 });
