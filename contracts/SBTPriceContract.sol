@@ -20,7 +20,11 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
     string[] calldata tokenB,
     address[] calldata poolAddress
   ) external onlyOwner {
-    require(tokenA.length == tokenB.length && tokenA.length == poolAddress.length, "Invalid Input");
+    require(
+      tokenA.length == tokenB.length && tokenA.length == poolAddress.length,
+      "Length mismatch between input data"
+    );
+
     for (uint256 i = 0; i < tokenA.length; i++) {
       pool[tokenA[i]][tokenB[i]] = poolAddress[i];
     }
@@ -30,28 +34,27 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
     tokenPrice = input;
   }
 
-  function getSBTPriceToken(string calldata tokenA) external view returns (address, uint256) {
-    address contractAddress;
+  function getSBTPriceToken(string calldata tokenA) external view returns (uint256) {
     uint256 ratio;
-    (contractAddress, ratio) = _calRatio(tokenA, "USDC");
-    if (contractAddress == address(0)) {
-      (contractAddress, ratio) = _calRatio(tokenA, "WBFC");
-      (, uint256 nativeRatio) = _calRatio("WBFC", "USDC");
+    ratio = _calRatio(tokenA, "USDC");
+
+    if (ratio == 0) {
+      ratio = _calRatio(tokenA, "WBFC");
+      uint256 nativeRatio = _calRatio("WBFC", "USDC");
       ratio *= nativeRatio;
       ratio /= 10 ** 18;
     }
-    require(contractAddress != address(0), "Invalid token");
+    require(ratio != 0, "The token pool does not exist");
     ratio = (ratio * tokenPrice) / 10 ** 6;
-    return (contractAddress, ratio);
+    return ratio;
   }
 
   function getSBTPriceNative() external view returns (uint256) {
-    (, uint256 ratio) = _calRatio("WBFC", "USDC");
+    uint256 ratio = _calRatio("WBFC", "USDC");
     return (ratio * tokenPrice) / 10 ** 6;
   }
 
-  function _calRatio(string memory tokenA, string memory tokenB) internal view returns (address, uint256) {
-    address aAddress;
+  function _calRatio(string memory tokenA, string memory tokenB) internal view returns (uint256) {
     address bAddress;
     uint256 aAmount;
     uint256 bAmount;
@@ -60,19 +63,17 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
       IUniswapV2Pair dexPool = IUniswapV2Pair(pool[tokenB][tokenA]);
       (bAmount, aAmount, ) = dexPool.getReserves();
       bAddress = dexPool.token0();
-      aAddress = dexPool.token1();
     } else if (pool[tokenA][tokenB] != address(0)) {
       IUniswapV2Pair dexPool = IUniswapV2Pair(pool[tokenA][tokenB]);
       (aAmount, bAmount, ) = dexPool.getReserves();
-      aAddress = dexPool.token0();
       bAddress = dexPool.token1();
     } else {
       // 직접적으로 연결된 풀이 없을 경우
-      return (address(0), 0);
+      return 0;
     }
 
     aAmount *= (10 ** IERC20(bAddress).decimals());
     aAmount /= bAmount;
-    return (aAddress, aAmount);
+    return aAmount;
   }
 }
