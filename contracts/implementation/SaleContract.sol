@@ -9,6 +9,11 @@ import "../access/Ownable.sol";
 import "../proxy/Initializable.sol";
 
 contract SaleContract is Ownable, StorageContract {
+  event SetToken(string[] token, TokenState[] input, address[] contractAddress);
+  event SetSBTContract(address _contract);
+  event SetSBTPriceContract(address _contract);
+  event SetSwitch(bool input);
+
   modifier checkSwitch() {
     require(killSwitch == false, "Contract stopped");
     _;
@@ -31,20 +36,21 @@ contract SaleContract is Ownable, StorageContract {
   }
 
   function buySBTToken(string calldata tokenA) external checkContract checkSwitch {
-    require(state[tokenA] != TokenState.None, "Invalid token");
+    require(state[tokenA] != TokenState.None, "Token is not registered");
+    uint256 price;
     if (state[tokenA] == TokenState.Stable) {
-      uint256 price = priceContract.tokenPrice();
-      usdcContract.transferFrom(_msgSender(), address(this), price);
+      price = priceContract.tokenPrice();
     } else {
-      (address token, uint256 price) = priceContract.getSBTPriceToken(tokenA);
-      IERC20(token).transferFrom(_msgSender(), address(this), price);
+      price = priceContract.getSBTPriceToken(tokenA);
     }
     count = count + 1;
+    IERC20(erc20Contract[tokenA]).transferFrom(_msgSender(), address(this), price);
     tokenContract.mintSBT(_msgSender(), count);
   }
 
-  // withdrawToken 필요함
-  // tokenContract 저장을 어디에 할지
+  function withdrawERC20(string calldata tokenA, uint256 amount) external checkSwitch onlyOwner {
+    IERC20(erc20Contract[tokenA]).transfer(owner(), amount);
+  }
 
   function withdrawBFC(uint256 amount) external checkSwitch onlyOwner {
     payable(owner()).transfer(amount);
@@ -56,20 +62,29 @@ contract SaleContract is Ownable, StorageContract {
 
   function setSBTPriceContract(address _contract) external onlyOwner {
     priceContract = ISBTPriceContract(_contract);
+    emit SetSBTPriceContract(_contract);
   }
 
   function setSwitch(bool input) external onlyOwner {
     killSwitch = input;
+    emit SetSwitch(input);
   }
 
   function setSBTContract(address _contract) external onlyOwner {
     tokenContract = ISBTContract(_contract);
+    emit SetSBTContract(_contract);
   }
 
-  function setToken(string[] calldata token, TokenState[] calldata input) external onlyOwner {
-    require(token.length == input.length, "Invalid Input");
+  function setToken(
+    string[] calldata token,
+    TokenState[] calldata input,
+    address[] calldata contractAddress
+  ) external onlyOwner {
+    require(token.length == input.length, "Length mismatch between input data");
     for (uint256 i = 0; i < token.length; i++) {
       state[token[i]] = input[i];
+      erc20Contract[token[i]] = contractAddress[i];
     }
+    emit SetToken(token, input, contractAddress);
   }
 }

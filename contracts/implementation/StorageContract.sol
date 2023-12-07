@@ -6,20 +6,22 @@ import "../interfaces/ISBTPriceContract.sol";
 import "../interfaces/IERC20.sol";
 import "../access/Ownable.sol";
 
-abstract contract StorageContract {
+abstract contract StorageContract is Ownable {
   enum TokenState {
     None,
     Stable,
     Token
   }
 
-  uint256 count;
+  uint32 public count;
   bool public killSwitch;
 
-  mapping(string => TokenState) state;
-  mapping(address => bool) whiteList;
+  mapping(string => TokenState) public state;
+  mapping(address => bool) public whiteList;
 
-  ISBTContract tokenContract;
-  ISBTPriceContract priceContract;
+  ISBTContract public tokenContract;
+  ISBTPriceContract public priceContract;
   IERC20 public constant usdcContract = IERC20(0x28661511CDA7119B2185c647F23106a637CC074f);
+
+  mapping(string => address) public erc20Contract;
 }
