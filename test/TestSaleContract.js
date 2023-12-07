@@ -57,11 +57,23 @@ describe("SaleContract", function () {
         .withArgs(testUser.address);
       expect(await saleContract.priceContract()).to.equal(testUser.address);
 
-      await expect(saleContract.setToken(["USDC"], [1], ["0x28661511CDA7119B2185c647F23106a637CC074f"]))
+      await expect(
+        saleContract.setToken(
+          ["USDC", "TEST"],
+          [1, 2],
+          ["0x28661511CDA7119B2185c647F23106a637CC074f", "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"],
+        ),
+      )
         .to.emit(saleContract, "SetToken")
-        .withArgs(["USDC"], [1], ["0x28661511CDA7119B2185c647F23106a637CC074f"]);
+        .withArgs(
+          ["USDC", "TEST"],
+          [1, 2],
+          ["0x28661511CDA7119B2185c647F23106a637CC074f", "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"],
+        );
       expect(await saleContract.state("USDC")).to.equal(1);
       expect(await saleContract.erc20Contract("USDC")).to.equal("0x28661511CDA7119B2185c647F23106a637CC074f");
+      expect(await saleContract.state("TEST")).to.equal(2);
+      expect(await saleContract.erc20Contract("TEST")).to.equal("0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030");
     });
 
     it("should fail set state from other", async function () {
