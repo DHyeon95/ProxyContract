@@ -6,7 +6,7 @@ import "./implementation/StorageContract.sol";
 import { ERC1967Utils } from "./ERC1967Proxy/ERC1967Utils.sol";
 
 contract ProxyContract is StorageContract, Proxy {
-  constructor(address implementation, bytes memory _data) payable {
+  constructor(address implementation, bytes memory _data) payable Ownable(_msgSender()) {
     ERC1967Utils.upgradeToAndCall(implementation, _data);
   }
 
