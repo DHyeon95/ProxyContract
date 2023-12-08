@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { tokenA, tokenB, poolAddress } = require("../pooldata/pooldata");
+const { tokenA, tokenB, poolAddress } = require("../pooldata/poolData");
 require("dotenv").config();
 
 describe("PriceContract", function () {

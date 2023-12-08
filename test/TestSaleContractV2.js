@@ -1,12 +1,13 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { constants } = require("@openzeppelin/test-helpers");
-require("dotenv").config();
+const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
-describe("SaleContract", function () {
+describe("SaleContractV2", function () {
   before(async function () {
     [owner, testUser] = await ethers.getSigners();
-    saleContract = await ethers.deployContract("SaleContract");
+    saleContract = await ethers.deployContract("SaleContractV2");
+    ERC20Factory = await ethers.getContractFactory("TestERC20");
+    usdcContract = await ERC20Factory.deploy("USDC", "USDC", 100, 6);
   });
 
   beforeEach(async function () {
@@ -36,9 +37,11 @@ describe("SaleContract", function () {
       expect(await saleContract.owner()).to.equal(owner.address);
       expect(await saleContract.count()).to.equal(0);
       expect(await saleContract.killSwitch()).to.equal(false);
-      expect(await saleContract.tokenContract()).to.equal(constants.ZERO_ADDRESS);
-      expect(await saleContract.priceContract()).to.equal(constants.ZERO_ADDRESS);
+      expect(await saleContract.tokenContract()).to.equal(ethers.ZeroAddress);
+      expect(await saleContract.priceContract()).to.equal(ethers.ZeroAddress);
       expect(await saleContract.usdcContract()).to.equal("0x28661511CDA7119B2185c647F23106a637CC074f");
+      expect(await saleContract.whiteList(testUser.address)).to.equal(false);
+      expect(await saleContract.limitedTimeSale()).to.equal(0);
     });
   });
 
@@ -61,19 +64,21 @@ describe("SaleContract", function () {
         saleContract.setToken(
           ["USDC", "TEST"],
           [1, 2],
-          ["0x28661511CDA7119B2185c647F23106a637CC074f", "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"],
+          [usdcContract.target, "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"],
         ),
       )
         .to.emit(saleContract, "SetToken")
-        .withArgs(
-          ["USDC", "TEST"],
-          [1, 2],
-          ["0x28661511CDA7119B2185c647F23106a637CC074f", "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"],
-        );
+        .withArgs(["USDC", "TEST"], [1, 2], [usdcContract.target, "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"]);
       expect(await saleContract.state("USDC")).to.equal(1);
-      expect(await saleContract.erc20Contract("USDC")).to.equal("0x28661511CDA7119B2185c647F23106a637CC074f");
+      expect(await saleContract.erc20Contract("USDC")).to.equal(usdcContract.target);
       expect(await saleContract.state("TEST")).to.equal(2);
       expect(await saleContract.erc20Contract("TEST")).to.equal("0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030");
+
+      await saleContract.setWhiteList(testUser.address, true);
+      expect(await saleContract.whiteList(testUser.address)).to.equal(true);
+
+      await saleContract.setLimitedTimeSale(3600 * 24 * 30);
+      expect(await saleContract.limitedTimeSale()).to.equal(3600 * 24 * 30 + (await helpers.time.latest()));
     });
 
     it("should fail set state from other", async function () {
@@ -87,19 +92,31 @@ describe("SaleContract", function () {
         saleContract,
         "OwnableUnauthorizedAccount",
       );
-      expect(await saleContract.tokenContract()).to.equal(constants.ZERO_ADDRESS);
+      expect(await saleContract.tokenContract()).to.equal(ethers.ZeroAddress);
 
       await expect(saleContract.connect(testUser).setSBTPriceContract(testUser.address)).to.be.revertedWithCustomError(
         saleContract,
         "OwnableUnauthorizedAccount",
       );
-      expect(await saleContract.priceContract()).to.equal(constants.ZERO_ADDRESS);
+      expect(await saleContract.priceContract()).to.equal(ethers.ZeroAddress);
 
       await expect(
         saleContract.connect(testUser).setToken(["USDC"], [1], ["0x28661511CDA7119B2185c647F23106a637CC074f"]),
       ).to.be.revertedWithCustomError(saleContract, "OwnableUnauthorizedAccount");
       expect(await saleContract.state("USDC")).to.equal(0);
-      expect(await saleContract.erc20Contract("USDC")).to.equal(constants.ZERO_ADDRESS);
+      expect(await saleContract.erc20Contract("USDC")).to.equal(ethers.ZeroAddress);
+
+      await expect(saleContract.connect(testUser).setWhiteList(testUser.address, true)).to.be.revertedWithCustomError(
+        saleContract,
+        "OwnableUnauthorizedAccount",
+      );
+      expect(await saleContract.whiteList(testUser.address)).to.equal(false);
+
+      await expect(saleContract.connect(testUser).setLimitedTimeSale(3600 * 24 * 30)).to.be.revertedWithCustomError(
+        saleContract,
+        "OwnableUnauthorizedAccount",
+      );
+      expect(await saleContract.limitedTimeSale()).to.equal(0);
     });
   });
 
@@ -121,18 +138,23 @@ describe("SaleContract", function () {
     before(async function () {
       testSBTContract = await ethers.deployContract("TestSBTContract", ["Test", "Test"]);
       testPriceContract = await ethers.deployContract("TestPriceContract");
-
-      await testPriceContract.setPrice(1);
+      await usdcContract.transfer(testUser.address, 10000);
+      await testPriceContract.setPrice(100);
 
       await saleContract.setSBTContract(testSBTContract);
       await saleContract.setSBTPriceContract(testPriceContract);
-      await saleContract.setToken(["USDC"], [1], ["0x28661511CDA7119B2185c647F23106a637CC074f"]);
+
+      await saleContract.setToken(["USDC"], [1], [usdcContract]);
     });
 
     it("should fail mint before token approve", async function () {
-      await expect(saleContract.buySBTToken("USDC")).to.be.revertedWith("ERC20: insufficient allowance");
-      await expect(saleContract.connect(testUser).buySBTToken("USDC")).to.be.revertedWith(
-        "ERC20: insufficient allowance",
+      await expect(saleContract.buySBTToken("USDC")).to.be.revertedWithCustomError(
+        usdcContract,
+        "ERC20InsufficientAllowance",
+      );
+      await expect(saleContract.connect(testUser).buySBTToken("USDC")).to.be.revertedWithCustomError(
+        usdcContract,
+        "ERC20InsufficientAllowance",
       );
       expect(await saleContract.count()).to.equal(0);
     });
@@ -144,17 +166,29 @@ describe("SaleContract", function () {
     });
 
     it("should mint exact value token", async function () {
-      await testPriceContract.setPrice(0);
-
+      const Price = await saleContract.getSBTPriceNative();
+      await usdcContract.approve(saleContract.target, Price);
       await saleContract.buySBTToken("USDC");
       expect(await testSBTContract.balanceOf(owner.address)).to.equal(1);
       expect(await testSBTContract.ownerOf(1)).to.equal(owner.address);
       expect(await saleContract.count()).to.equal(1);
 
+      await usdcContract.connect(testUser).approve(saleContract.target, Price);
       await saleContract.connect(testUser).buySBTToken("USDC");
       expect(await testSBTContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
       expect(await testSBTContract.connect(testUser).ownerOf(2)).to.equal(testUser.address);
       expect(await saleContract.count()).to.equal(2);
+    });
+
+    it("should mint special SBT", async function () {
+      await testPriceContract.setPrice(0);
+      await saleContract.setWhiteList(testUser.address, true);
+      await saleContract.setLimitedTimeSale(3600);
+
+      await saleContract.connect(testUser).buySBTToken("USDC");
+      expect(await testSBTContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
+      expect(await testSBTContract.connect(testUser).ownerOf(1000000)).to.equal(testUser.address);
+      expect(await saleContract.count()).to.equal(1);
     });
 
     it("should fail inexact value(BFC)", async function () {
@@ -167,31 +201,39 @@ describe("SaleContract", function () {
     });
 
     it("should mint exact value(BFC)", async function () {
-      await saleContract.buySBTNative({ value: 1 });
+      const Price = await saleContract.getSBTPriceNative();
+      await saleContract.buySBTNative({ value: Price });
+
       expect(await testSBTContract.balanceOf(owner.address)).to.equal(1);
       expect(await testSBTContract.ownerOf(1)).to.equal(owner.address);
       expect(await saleContract.count()).to.equal(1);
 
-      await saleContract.connect(testUser).buySBTNative({ value: 1 });
+      await saleContract.connect(testUser).buySBTNative({ value: Price });
       expect(await testSBTContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
       expect(await testSBTContract.connect(testUser).ownerOf(2)).to.equal(testUser.address);
       expect(await saleContract.count()).to.equal(2);
     });
 
     it("should withdraw from owner", async function () {
-      const usdcContract = await ethers.getContractAt("IERC20", "0x28661511CDA7119B2185c647F23106a637CC074f");
-      await saleContract.buySBTNative({ value: 1 });
+      const Price = await saleContract.getSBTPriceNative();
+      await saleContract.buySBTNative({ value: Price });
+      await usdcContract.approve(saleContract.target, Price);
+      await saleContract.buySBTToken("USDC");
 
-      await expect(await saleContract.withdrawUSDC(0)).to.changeTokenBalances(
+      await expect(saleContract.withdrawERC20("USDC", Price)).to.changeTokenBalances(
         usdcContract,
         [owner, saleContract],
-        [0, 0],
+        [Price, -Price],
       );
       await expect(await saleContract.withdrawBFC(1)).to.changeEtherBalances([owner, saleContract], [1, -1]);
     });
 
     it("should fail withdraw", async function () {
-      await expect(saleContract.withdrawUSDC(100)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      await expect(saleContract.withdrawERC20("TEST", 100)).to.be.revertedWith("Token is not registered");
+      await expect(saleContract.withdrawERC20("USDC", 100)).to.be.revertedWithCustomError(
+        usdcContract,
+        "ERC20InsufficientBalance",
+      );
       await expect(saleContract.withdrawBFC(100)).to.be.reverted;
     });
   });
@@ -221,7 +263,7 @@ describe("SaleContract", function () {
     });
 
     it("should fail withdraw", async function () {
-      await expect(saleContract.connect(testUser).withdrawUSDC(500)).to.be.revertedWith("Contract stopped");
+      await expect(saleContract.connect(testUser).withdrawERC20("USDC", 500)).to.be.revertedWith("Contract stopped");
       await expect(saleContract.connect(testUser).withdrawBFC(500)).to.be.revertedWith("Contract stopped");
     });
   });

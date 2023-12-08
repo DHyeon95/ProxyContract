@@ -1,6 +1,5 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { constants } = require("@openzeppelin/test-helpers");
 
 describe("SBTContract", function () {
   before(async function () {
@@ -22,7 +21,7 @@ describe("SBTContract", function () {
       expect(await tokenContract.symbol()).to.equal("TfS");
       expect(await tokenContract.balanceOf(owner.address)).to.equal(0);
       expect(await tokenContract.owner()).to.equal(owner.address);
-      expect(await tokenContract.seller()).to.equal(constants.ZERO_ADDRESS);
+      expect(await tokenContract.seller()).to.equal(ethers.ZeroAddress);
     });
   });
 
@@ -59,7 +58,7 @@ describe("SBTContract", function () {
           .to.emit(tokenContract, "Issued")
           .withArgs(testUser.address, testUser.address, 1, 1)
           .to.emit(tokenContract, "Transfer")
-          .withArgs(constants.ZERO_ADDRESS, testUser.address, 1);
+          .withArgs(ethers.ZeroAddress, testUser.address, 1);
         expect(await tokenContract.balanceOf(testUser.address)).to.equal(1);
         expect(await tokenContract.ownerOf(1)).to.equal(testUser.address);
       });
