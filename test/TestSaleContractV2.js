@@ -7,7 +7,7 @@ describe("SaleContractV2", function () {
     [owner, testUser] = await ethers.getSigners();
     saleContract = await ethers.deployContract("SaleContractV2");
     ERC20Factory = await ethers.getContractFactory("TestERC20");
-    usdcContract = await ERC20Factory.deploy("USDC", "USDC", 100, 6);
+    usdcContract = await ERC20Factory.deploy("USDC", "USDC", 100000, 6);
   });
 
   beforeEach(async function () {
@@ -166,8 +166,8 @@ describe("SaleContractV2", function () {
     });
 
     it("should mint exact value token", async function () {
-      const Price = await saleContract.getSBTPriceNative();
-      await usdcContract.approve(saleContract.target, Price);
+      const price = await saleContract.getSBTPriceNative();
+      await usdcContract.approve(saleContract.target, price);
       await saleContract.buySBTToken("USDC");
       expect(await testSBTContract.balanceOf(owner.address)).to.equal(1);
       expect(await testSBTContract.ownerOf(1)).to.equal(owner.address);
@@ -201,29 +201,29 @@ describe("SaleContractV2", function () {
     });
 
     it("should mint exact value(BFC)", async function () {
-      const Price = await saleContract.getSBTPriceNative();
-      await saleContract.buySBTNative({ value: Price });
+      const price = await saleContract.getSBTPriceNative();
+      await saleContract.buySBTNative({ value: price });
 
       expect(await testSBTContract.balanceOf(owner.address)).to.equal(1);
       expect(await testSBTContract.ownerOf(1)).to.equal(owner.address);
       expect(await saleContract.count()).to.equal(1);
 
-      await saleContract.connect(testUser).buySBTNative({ value: Price });
+      await saleContract.connect(testUser).buySBTNative({ value: price });
       expect(await testSBTContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
       expect(await testSBTContract.connect(testUser).ownerOf(2)).to.equal(testUser.address);
       expect(await saleContract.count()).to.equal(2);
     });
 
     it("should withdraw from owner", async function () {
-      const Price = await saleContract.getSBTPriceNative();
-      await saleContract.buySBTNative({ value: Price });
-      await usdcContract.approve(saleContract.target, Price);
+      const price = await saleContract.getSBTPriceNative();
+      await saleContract.buySBTNative({ value: price });
+      await usdcContract.approve(saleContract.target, price);
       await saleContract.buySBTToken("USDC");
 
-      await expect(saleContract.withdrawERC20("USDC", Price)).to.changeTokenBalances(
+      await expect(saleContract.withdrawERC20("USDC", price)).to.changeTokenBalances(
         usdcContract,
         [owner, saleContract],
-        [Price, -Price],
+        [price, -price],
       );
       await expect(await saleContract.withdrawBFC(1)).to.changeEtherBalances([owner, saleContract], [1, -1]);
     });

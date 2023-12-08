@@ -10,6 +10,10 @@ contract ProxyContract is StorageContract, Proxy {
     ERC1967Utils.upgradeToAndCall(implementation, _data);
   }
 
+  function upgrade(address implementation, bytes memory _data) external onlyOwner {
+    ERC1967Utils.upgradeToAndCall(implementation, _data);
+  }
+
   function _implementation() internal view override returns (address) {
     return ERC1967Utils.getImplementation();
   }
