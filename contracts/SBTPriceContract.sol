@@ -16,30 +16,30 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
   }
 
   function setPool(
-    string[] calldata tokenA,
-    string[] calldata tokenB,
+    string[] calldata _tokenA,
+    string[] calldata _tokenB,
     address[] calldata poolAddress
   ) external onlyOwner {
     require(
-      tokenA.length == tokenB.length && tokenA.length == poolAddress.length,
+      _tokenA.length == _tokenB.length && _tokenA.length == poolAddress.length,
       "Length mismatch between input data"
     );
 
-    for (uint256 i = 0; i < tokenA.length; i++) {
-      pool[tokenA[i]][tokenB[i]] = poolAddress[i];
+    for (uint256 i = 0; i < _tokenA.length; i++) {
+      pool[_tokenA[i]][_tokenB[i]] = poolAddress[i];
     }
   }
 
-  function setTokenPrice(uint256 input) external onlyOwner {
-    tokenPrice = input;
+  function setTokenPrice(uint256 _price) external onlyOwner {
+    tokenPrice = _price;
   }
 
-  function getSBTPriceToken(string calldata tokenA) external view returns (uint256) {
+  function getSBTPriceToken(string calldata _tokenA) external view returns (uint256) {
     uint256 ratio;
-    ratio = _calRatio(tokenA, "USDC");
+    ratio = _calRatio(_tokenA, "USDC");
 
     if (ratio == 0) {
-      ratio = _calRatio(tokenA, "WBFC");
+      ratio = _calRatio(_tokenA, "WBFC");
       uint256 nativeRatio = _calRatio("WBFC", "USDC");
       ratio *= nativeRatio;
       ratio /= 10 ** 18;
@@ -54,17 +54,17 @@ contract SBTPriceContract is ISBTPriceContract, Ownable {
     return (ratio * tokenPrice) / 10 ** 6;
   }
 
-  function _calRatio(string memory tokenA, string memory tokenB) internal view returns (uint256) {
+  function _calRatio(string memory _tokenA, string memory _tokenB) internal view returns (uint256) {
     address bAddress;
     uint256 aAmount;
     uint256 bAmount;
 
-    if (pool[tokenB][tokenA] != address(0)) {
-      IUniswapV2Pair dexPool = IUniswapV2Pair(pool[tokenB][tokenA]);
+    if (pool[_tokenB][_tokenA] != address(0)) {
+      IUniswapV2Pair dexPool = IUniswapV2Pair(pool[_tokenB][_tokenA]);
       (bAmount, aAmount, ) = dexPool.getReserves();
       bAddress = dexPool.token0();
-    } else if (pool[tokenA][tokenB] != address(0)) {
-      IUniswapV2Pair dexPool = IUniswapV2Pair(pool[tokenA][tokenB]);
+    } else if (pool[_tokenA][_tokenB] != address(0)) {
+      IUniswapV2Pair dexPool = IUniswapV2Pair(pool[_tokenA][_tokenB]);
       (aAmount, bAmount, ) = dexPool.getReserves();
       bAddress = dexPool.token1();
     } else {

@@ -6,8 +6,8 @@ import "../interfaces/ISBTPriceContract.sol";
 contract TestPriceContract is ISBTPriceContract {
   uint256 price;
 
-  function setPrice(uint256 input) external {
-    price = input;
+  function setPrice(uint256 _price) external {
+    price = _price;
   }
 
   function getSBTPriceToken(string memory) external view returns (uint256) {

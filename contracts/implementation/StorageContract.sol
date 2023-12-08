@@ -24,4 +24,5 @@ abstract contract StorageContract is Ownable {
   IERC20 public constant usdcContract = IERC20(0x28661511CDA7119B2185c647F23106a637CC074f);
 
   mapping(string => address) public erc20Contract;
+  uint256 public limitedTimeSale;
 }
