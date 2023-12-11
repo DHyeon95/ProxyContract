@@ -57,10 +57,6 @@ contract SaleContractV1 is Ownable, StorageContract {
     payable(owner()).transfer(_amount);
   }
 
-  function withdrawUSDC(uint256 _amount) external checkSwitch onlyOwner {
-    usdcContract.transfer(owner(), _amount);
-  }
-
   function setSBTPriceContract(address _address) external onlyOwner {
     priceContract = ISBTPriceContract(_address);
     emit SetSBTPriceContract(_address);
