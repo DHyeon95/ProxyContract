@@ -66,14 +66,14 @@ contract SaleContractV1 is Ownable, StorageContract {
     emit SetSBTPriceContract(_address);
   }
 
-  function setSwitch(bool _bool) external onlyOwner {
-    killSwitch = _bool;
-    emit SetSwitch(_bool);
-  }
-
   function setSBTContract(address _address) external onlyOwner {
     tokenContract = ISBTContract(_address);
     emit SetSBTContract(_address);
+  }
+
+  function setSwitch(bool _bool) external onlyOwner {
+    killSwitch = _bool;
+    emit SetSwitch(_bool);
   }
 
   function setToken(
