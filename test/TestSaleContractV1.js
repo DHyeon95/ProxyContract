@@ -118,33 +118,26 @@ describe("SaleContractV1", function () {
     });
   });
 
-  /*
-  buySBTNative
-  buySBTToken
-  withdrawERC20
-  withdrawBFC
-  setSBTPriceContract
-  setSBTContract
-  setSwitch
-  setToken
-*/
-
   describe("Contract connect", function () {
     before(async function () {
       testSBTContract = await ethers.deployContract("TestSBTContract", ["Test", "Test"]);
       testPriceContract = await ethers.deployContract("TestPriceContract");
 
-      await testPriceContract.setPrice(1);
+      await testPriceContract.setPrice(1000000);
 
       await saleContract.setSBTContract(testSBTContract);
       await saleContract.setSBTPriceContract(testPriceContract);
-      await saleContract.setToken(["USDC"], [1], ["0x28661511CDA7119B2185c647F23106a637CC074f"]);
+      await saleContract.setToken(["USDC"], [1], [usdcContract.target]);
     });
 
     it("should fail mint before token approve", async function () {
-      await expect(saleContract.buySBTToken("USDC")).to.be.revertedWith("ERC20: insufficient allowance");
-      await expect(saleContract.connect(testUser).buySBTToken("USDC")).to.be.revertedWith(
-        "ERC20: insufficient allowance",
+      await expect(saleContract.buySBTToken("USDC")).to.be.revertedWithCustomError(
+        usdcContract,
+        "ERC20InsufficientAllowance",
+      );
+      await expect(saleContract.connect(testUser).buySBTToken("USDC")).to.be.revertedWithCustomError(
+        usdcContract,
+        "ERC20InsufficientAllowance",
       );
       expect(await saleContract.count()).to.equal(0);
     });
@@ -156,13 +149,16 @@ describe("SaleContractV1", function () {
     });
 
     it("should mint exact value token", async function () {
-      await testPriceContract.setPrice(0);
+      const price = await testPriceContract.tokenPrice();
+      usdcContract.approve(saleContract.target, price);
+      usdcContract.transfer(testUser, price);
 
       await saleContract.buySBTToken("USDC");
       expect(await testSBTContract.balanceOf(owner.address)).to.equal(1);
       expect(await testSBTContract.ownerOf(1)).to.equal(owner.address);
       expect(await saleContract.count()).to.equal(1);
 
+      usdcContract.connect(testUser).approve(saleContract.target, price);
       await saleContract.connect(testUser).buySBTToken("USDC");
       expect(await testSBTContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
       expect(await testSBTContract.connect(testUser).ownerOf(2)).to.equal(testUser.address);
@@ -195,13 +191,17 @@ describe("SaleContractV1", function () {
     it("should withdraw from owner", async function () {
       const price = await testPriceContract.getSBTPriceNative();
       await saleContract.buySBTNative({ value: price });
-      await expect(await saleContract.withdrawBFC(1)).to.changeEtherBalances([owner, saleContract], [price, -price]);
+      await expect(await saleContract.withdrawBFC(price)).to.changeEtherBalances(
+        [owner, saleContract],
+        [price, -price],
+      );
     });
 
     it("should fail withdraw", async function () {
       await expect(saleContract.withdrawERC20("TEST", 100)).to.be.revertedWith("Token is not registered");
-      await expect(saleContract.withdrawERC20("USDC", 100)).to.be.revertedWith(
-        "ERC20: transfer amount exceeds balance",
+      await expect(saleContract.withdrawERC20("USDC", 100)).to.be.revertedWithCustomError(
+        usdcContract,
+        "ERC20InsufficientBalance",
       );
       await expect(saleContract.withdrawBFC(100)).to.be.reverted;
     });
