@@ -173,7 +173,7 @@ describe("SaleContractV2", function () {
       expect(await testSBTContract.ownerOf(1)).to.equal(owner.address);
       expect(await saleContract.count()).to.equal(1);
 
-      await usdcContract.connect(testUser).approve(saleContract.target, Price);
+      await usdcContract.connect(testUser).approve(saleContract.target, price);
       await saleContract.connect(testUser).buySBTToken("USDC");
       expect(await testSBTContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
       expect(await testSBTContract.connect(testUser).ownerOf(2)).to.equal(testUser.address);

@@ -118,6 +118,17 @@ describe("SaleContractV1", function () {
     });
   });
 
+  /*
+  buySBTNative
+  buySBTToken
+  withdrawERC20
+  withdrawBFC
+  setSBTPriceContract
+  setSBTContract
+  setSwitch
+  setToken
+*/
+
   describe("Contract connect", function () {
     before(async function () {
       testSBTContract = await ethers.deployContract("TestSBTContract", ["Test", "Test"]);

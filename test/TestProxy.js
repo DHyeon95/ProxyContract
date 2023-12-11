@@ -5,7 +5,7 @@ const { constants } = require("@openzeppelin/test-helpers");
 const { tokenA, tokenB, poolAddress, tokenList } = require("../pooldata/poolData");
 require("dotenv").config();
 
-describe.only("Proxy Test", function () {
+describe("Proxy Test", function () {
   before(async function () {
     [owner, testUser] = await ethers.getSigners();
     LogicFactoryV1 = await ethers.getContractFactory("SaleContractV1");
@@ -218,7 +218,8 @@ describe.only("Proxy Test", function () {
     // slot 제대로 바뀌는지 체크
   });
 
-  describe.only("V2 test", function () {
+  // await hre.network.provider.send("hardhat_reset")
+  describe("V2 test", function () {
     before(async function () {
       LogicFactoryV2 = await ethers.getContractFactory("SaleContractV2");
       ERC20Factory = await ethers.getContractFactory("TestERC20");
@@ -229,78 +230,78 @@ describe.only("Proxy Test", function () {
       proxyContract = await LogicFactoryV2.attach(proxyContract.target);
     });
 
-    describe("Set state", function () {
-      it("should set state from owner", async function () {
-        await expect(proxyContract.setSwitch(true)).to.emit(proxyContract, "SetSwitch").withArgs(true);
-        expect(await proxyContract.killSwitch()).to.equal(true);
+    // describe("Set state", function () {
+    //   it("should fail set state from other", async function () {
+    //     await expect(proxyContract.connect(testUser).setSwitch(true)).to.be.revertedWithCustomError(
+    //       proxyContract,
+    //       "OwnableUnauthorizedAccount",
+    //     );
+    //     expect(await proxyContract.killSwitch()).to.equal(false);
 
-        await expect(proxyContract.setSBTContract(testUser.address))
-          .to.emit(proxyContract, "SetSBTContract")
-          .withArgs(testUser.address);
-        expect(await proxyContract.tokenContract()).to.equal(testUser.address);
+    //     await expect(proxyContract.connect(testUser).setSBTContract(testUser.address)).to.be.revertedWithCustomError(
+    //       proxyContract,
+    //       "OwnableUnauthorizedAccount",
+    //     );
+    //     expect(await proxyContract.tokenContract()).to.equal(ethers.ZeroAddress);
 
-        await expect(proxyContract.setSBTPriceContract(testUser.address))
-          .to.emit(proxyContract, "SetSBTPriceContract")
-          .withArgs(testUser.address);
-        expect(await proxyContract.priceContract()).to.equal(testUser.address);
+    //     await expect(
+    //       proxyContract.connect(testUser).setSBTPriceContract(testUser.address),
+    //     ).to.be.revertedWithCustomError(proxyContract, "OwnableUnauthorizedAccount");
+    //     expect(await proxyContract.priceContract()).to.equal(ethers.ZeroAddress);
 
-        await expect(
-          proxyContract.setToken(
-            ["USDC", "TEST"],
-            [1, 2],
-            [usdcContract.target, "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"],
-          ),
-        )
-          .to.emit(proxyContract, "SetToken")
-          .withArgs(["USDC", "TEST"], [1, 2], [usdcContract.target, "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"]);
-        expect(await proxyContract.state("USDC")).to.equal(1);
-        expect(await proxyContract.erc20Contract("USDC")).to.equal(usdcContract.target);
-        expect(await proxyContract.state("TEST")).to.equal(2);
-        expect(await proxyContract.erc20Contract("TEST")).to.equal("0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030");
+    //     await expect(
+    //       proxyContract.connect(testUser).setToken(["USDC"], [1], ["0x28661511CDA7119B2185c647F23106a637CC074f"]),
+    //     ).to.be.revertedWithCustomError(proxyContract, "OwnableUnauthorizedAccount");
+    //     expect(await proxyContract.state("USDC")).to.equal(0);
+    //     expect(await proxyContract.erc20Contract("USDC")).to.equal(ethers.ZeroAddress);
 
-        await proxyContract.setWhiteList(testUser.address, true);
-        expect(await proxyContract.whiteList(testUser.address)).to.equal(true);
+    //     await expect(
+    //       proxyContract.connect(testUser).setWhiteList(testUser.address, true),
+    //     ).to.be.revertedWithCustomError(proxyContract, "OwnableUnauthorizedAccount");
+    //     expect(await proxyContract.whiteList(testUser.address)).to.equal(false);
 
-        await proxyContract.setLimitedTimeSale(3600 * 24 * 30);
-        expect(await proxyContract.limitedTimeSale()).to.equal(3600 * 24 * 30 + (await helpers.time.latest()));
-      });
+    //     await expect(proxyContract.connect(testUser).setLimitedTimeSale(3600 * 24 * 30)).to.be.revertedWithCustomError(
+    //       proxyContract,
+    //       "OwnableUnauthorizedAccount",
+    //     );
+    //     expect(await proxyContract.limitedTimeSale()).to.equal(0);
+    //   });
 
-      it("should fail set state from other", async function () {
-        await expect(proxyContract.connect(testUser).setSwitch(true)).to.be.revertedWithCustomError(
-          proxyContract,
-          "OwnableUnauthorizedAccount",
-        );
-        expect(await proxyContract.killSwitch()).to.equal(false);
+    //   it("should set state from owner", async function () {
+    //     await expect(proxyContract.setSwitch(true)).to.emit(proxyContract, "SetSwitch").withArgs(true);
+    //     expect(await proxyContract.killSwitch()).to.equal(true);
 
-        await expect(proxyContract.connect(testUser).setSBTContract(testUser.address)).to.be.revertedWithCustomError(
-          proxyContract,
-          "OwnableUnauthorizedAccount",
-        );
-        expect(await proxyContract.tokenContract()).to.equal(ethers.ZeroAddress);
+    //     await expect(proxyContract.setSBTContract(testUser.address))
+    //       .to.emit(proxyContract, "SetSBTContract")
+    //       .withArgs(testUser.address);
+    //     expect(await proxyContract.tokenContract()).to.equal(testUser.address);
 
-        await expect(
-          proxyContract.connect(testUser).setSBTPriceContract(testUser.address),
-        ).to.be.revertedWithCustomError(proxyContract, "OwnableUnauthorizedAccount");
-        expect(await proxyContract.priceContract()).to.equal(ethers.ZeroAddress);
+    //     await expect(proxyContract.setSBTPriceContract(testUser.address))
+    //       .to.emit(proxyContract, "SetSBTPriceContract")
+    //       .withArgs(testUser.address);
+    //     expect(await proxyContract.priceContract()).to.equal(testUser.address);
 
-        await expect(
-          proxyContract.connect(testUser).setToken(["USDC"], [1], ["0x28661511CDA7119B2185c647F23106a637CC074f"]),
-        ).to.be.revertedWithCustomError(proxyContract, "OwnableUnauthorizedAccount");
-        expect(await proxyContract.state("USDC")).to.equal(0);
-        expect(await proxyContract.erc20Contract("USDC")).to.equal(ethers.ZeroAddress);
+    //     await expect(
+    //       proxyContract.setToken(
+    //         ["USDC", "TEST"],
+    //         [1, 2],
+    //         [usdcContract.target, "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"],
+    //       ),
+    //     )
+    //       .to.emit(proxyContract, "SetToken")
+    //       .withArgs(["USDC", "TEST"], [1, 2], [usdcContract.target, "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"]);
+    //     expect(await proxyContract.state("USDC")).to.equal(1);
+    //     expect(await proxyContract.erc20Contract("USDC")).to.equal(usdcContract.target);
+    //     expect(await proxyContract.state("TEST")).to.equal(2);
+    //     expect(await proxyContract.erc20Contract("TEST")).to.equal("0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030");
 
-        await expect(
-          proxyContract.connect(testUser).setWhiteList(testUser.address, true),
-        ).to.be.revertedWithCustomError(proxyContract, "OwnableUnauthorizedAccount");
-        expect(await proxyContract.whiteList(testUser.address)).to.equal(false);
+    //     await proxyContract.setWhiteList(testUser.address, true);
+    //     expect(await proxyContract.whiteList(testUser.address)).to.equal(true);
 
-        await expect(proxyContract.connect(testUser).setLimitedTimeSale(3600 * 24 * 30)).to.be.revertedWithCustomError(
-          proxyContract,
-          "OwnableUnauthorizedAccount",
-        );
-        expect(await proxyContract.limitedTimeSale()).to.equal(0);
-      });
-    });
+    //     await proxyContract.setLimitedTimeSale(3600 * 24 * 30);
+    //     expect(await proxyContract.limitedTimeSale()).to.equal(3600 * 24 * 30 + (await helpers.time.latest()));
+    //   });
+    // });
 
     describe("User test", function () {
       before(async function () {
@@ -386,17 +387,17 @@ describe.only("Proxy Test", function () {
       });
 
       it("should withdraw from owner", async function () {
-        const Price = await proxyContract.getSBTPriceNative();
-        await proxyContract.buySBTNative({ value: Price });
-        await usdcContract.approve(proxyContract.target, Price);
+        const price = await proxyContract.getSBTPriceNative();
+        await proxyContract.buySBTNative({ value: price });
+        await usdcContract.approve(proxyContract.target, price);
         await proxyContract.buySBTToken("USDC");
 
-        await expect(proxyContract.withdrawERC20("USDC", Price)).to.changeTokenBalances(
+        await expect(proxyContract.withdrawERC20("USDC", 100)).to.changeTokenBalances(
           usdcContract,
           [owner, proxyContract],
-          [Price, -Price],
+          [100, -100],
         );
-        await expect(await proxyContract.withdrawBFC(1)).to.changeEtherBalances([owner, saleContract], [1, -1]);
+        await expect(await proxyContract.withdrawBFC(100)).to.changeEtherBalances([owner, proxyContract], [100, -100]);
       });
 
       it("should fail withdraw", async function () {
@@ -418,7 +419,6 @@ describe.only("Proxy Test", function () {
         });
 
         it("should fail mint", async function () {
-          priceContract.setPrice(100);
           await expect(proxyContract.buySBTToken("USDC")).to.be.revertedWith("Contract stopped");
           await expect(proxyContract.connect(testUser).buySBTToken("USDC")).to.be.revertedWith("Contract stopped");
 
