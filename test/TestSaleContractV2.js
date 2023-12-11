@@ -181,13 +181,27 @@ describe("SaleContractV2", function () {
     });
 
     it("should mint special SBT", async function () {
-      await testPriceContract.setPrice(0);
+      const price = await testPriceContract.tokenPrice();
+      await usdcContract.connect(testUser).approve(saleContract.target, price);
       await saleContract.setWhiteList(testUser.address, true);
       await saleContract.setLimitedTimeSale(3600);
 
       await saleContract.connect(testUser).buySBTToken("USDC");
       expect(await testSBTContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
       expect(await testSBTContract.connect(testUser).ownerOf(1000000)).to.equal(testUser.address);
+      expect(await saleContract.count()).to.equal(1);
+    });
+
+    it("should mint normal SBT", async function () {
+      const price = await testPriceContract.tokenPrice();
+      await usdcContract.connect(testUser).approve(saleContract.target, price);
+      await saleContract.setWhiteList(testUser.address, true);
+      await saleContract.setLimitedTimeSale(3600);
+
+      await helpers.time.increase(4000);
+      await saleContract.connect(testUser).buySBTToken("USDC");
+      expect(await testSBTContract.connect(testUser).balanceOf(testUser.address)).to.equal(1);
+      expect(await testSBTContract.connect(testUser).ownerOf(1)).to.equal(testUser.address);
       expect(await saleContract.count()).to.equal(1);
     });
 

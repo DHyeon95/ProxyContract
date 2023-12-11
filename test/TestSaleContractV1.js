@@ -232,7 +232,7 @@ describe("SaleContractV1", function () {
     });
 
     it("should fail withdraw", async function () {
-      await expect(saleContract.connect(testUser).withdrawUSDC(500)).to.be.revertedWith("Contract stopped");
+      await expect(saleContract.connect(testUser).withdrawERC20("USDC", 500)).to.be.revertedWith("Contract stopped");
       await expect(saleContract.connect(testUser).withdrawBFC(500)).to.be.revertedWith("Contract stopped");
     });
   });
