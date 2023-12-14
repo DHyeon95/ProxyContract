@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { constants } = require("@openzeppelin/test-helpers");
-const { tokenA, tokenB, poolAddress, tokenList } = require("../pooldata/poolData");
+const { tokenA, tokenB, poolAddress, tokenList } = require("../pooldata/PoolData");
 require("dotenv").config();
 
 describe("Proxy Test", function () {
@@ -222,6 +222,23 @@ describe("Proxy Test", function () {
       proxyContract = await LogicFactoryV2.attach(proxyContract.target);
     });
 
+    it("should revert invalid function", async function () {
+      proxyContract = await ProxyFactory.attach(proxyContract.target);
+      await proxyContract.upgrade(usdcContract, "0x");
+      proxyContract = await LogicFactoryV2.attach(proxyContract.target);
+
+      await expect(proxyContract.setSwitch(true)).to.be.reverted;
+      expect(await proxyContract.killSwitch()).to.equal(false);
+      await expect(proxyContract.setSBTContract(testUser.address)).to.be.reverted;
+      await expect(
+        proxyContract.setToken(
+          ["USDC", "TEST"],
+          [1, 2],
+          [usdcContract.target, "0xbf22b27ceC1F1c8fc04219ccCCb7ED6F6F4f8030"],
+        ),
+      ).to.be.reverted;
+    });
+
     it("should the slots match", async function () {
       await expect(proxyContract.setSwitch(true)).to.emit(proxyContract, "SetSwitch").withArgs(true);
       expect(await proxyContract.killSwitch()).to.equal(true);
@@ -295,6 +312,7 @@ describe("Proxy Test", function () {
       it("should fail mint unregistered token", async function () {
         await expect(proxyContract.buySBTToken("TEST")).to.be.revertedWith("Token is not registered");
         await expect(proxyContract.connect(testUser).buySBTToken("TEST")).to.be.revertedWith("Token is not registered");
+        await expect(proxyContract.connect(testUser).buySBTToken("USDT")).to.be.revertedWith("Token is not registered");
         expect(await proxyContract.count()).to.equal(0);
       });
 

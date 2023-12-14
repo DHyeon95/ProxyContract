@@ -1,4 +1,4 @@
-const data = require("../config/pooldata.json");
+const data = require("../config/Pooldata.json");
 
 const jsonString = JSON.stringify(data, null, 1);
 const jsonObject = JSON.parse(jsonString);
